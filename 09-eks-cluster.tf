@@ -1,10 +1,6 @@
-locals {
-  cluster_name = "smartcloud-eks"
-}
-
 # IAM role assumed by the EKS control plane
 resource "aws_iam_role" "eks_cluster_role" {
-  name = "${local.cluster_name}-cluster-role"
+  name = "${var.cluster_name}-cluster-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -22,7 +18,8 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
 }
 
 resource "aws_eks_cluster" "eks" {
-  name     = local.cluster_name
+  name     = var.cluster_name
+  version  = var.cluster_version
   role_arn = aws_iam_role.eks_cluster_role.arn
 
   vpc_config {
@@ -34,6 +31,7 @@ resource "aws_eks_cluster" "eks" {
     ]
     endpoint_public_access  = true
     endpoint_private_access = true
+    public_access_cidrs     = var.cluster_endpoint_public_access_cidrs
   }
 
   access_config {
@@ -42,7 +40,7 @@ resource "aws_eks_cluster" "eks" {
   }
 
   tags = {
-    Name = local.cluster_name
+    Name = var.cluster_name
   }
 
   depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]

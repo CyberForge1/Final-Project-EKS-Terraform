@@ -1,0 +1,199 @@
+# Terraform CI/CD for the Final  Project EKS stack
+# =============================================
+name: terraform deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      destroy:
+        description: "Destroy everything instead of applying (needs the destroy job uncommented)"
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write 
+  contents: read
+
+# Never run two Terraform jobs against the same state at once
+concurrency:
+  group: terraform-eks
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-west-1
+  TF_VERSION: 1.16.5
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  init:
+    name: terraform init & validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: terraform init
+        run: terraform init
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: terraform validate
+        run: terraform validate
+
+  # # ---------------------------------------------------------------------------
+  # tfsec:
+  #   name: security scan (tfsec)
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v7
+
+  #     - name: tfsec
+  #       uses: aquasecurity/tfsec-action@v1.0.3
+  #       with:
+  #         # Report findings without blocking the deploy. Set to false to make
+  #         # any finding fail the pipeline once the known issues are fixed.
+  #         soft_fail: true
+
+  # # ---------------------------------------------------------------------------
+  # apply:
+  #   name: terraform apply
+  #   needs: [init, tfsec]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v7
+
+  #     - uses: hashicorp/setup-terraform@v4
+  #       with:
+  #         terraform_version: ${{ env.TF_VERSION }}
+  #         terraform_wrapper: false
+
+  #     - uses: aws-actions/configure-aws-credentials@v6
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: ${{ env.AWS_REGION }}
+
+  #     - name: terraform init
+  #       run: terraform init
+
+  #     - name: terraform plan
+  #       run: terraform plan -out=tfplan
+
+  #     - name: terraform apply
+  #       run: terraform apply -auto-approve tfplan
+
+  # # ---------------------------------------------------------------------------
+  # test:
+  #   name: verify deployment
+  #   needs: apply
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v7
+
+  #     - uses: hashicorp/setup-terraform@v4
+  #       with:
+  #         terraform_version: ${{ env.TF_VERSION }}
+  #         terraform_wrapper: false
+
+  #     - uses: aws-actions/configure-aws-credentials@v6
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: ${{ env.AWS_REGION }}
+
+  #     - name: Read Terraform outputs
+  #       id: tf
+  #       run: |
+  #         terraform init
+  #         echo "cluster=$(terraform output -raw eks_cluster_name)" >> "$GITHUB_OUTPUT"
+  #         echo "kubeconfig_uri=$(terraform output -raw kubeconfig_s3_uri)" >> "$GITHUB_OUTPUT"
+
+  #     - name: Cluster is ACTIVE
+  #       run: |
+  #         status=$(aws eks describe-cluster --name "${{ steps.tf.outputs.cluster }}" --query cluster.status --output text)
+  #         echo "EKS status: $status"
+  #         test "$status" = "ACTIVE"
+
+  #     - name: Connect kubectl
+  #       run: aws eks update-kubeconfig --region "$AWS_REGION" --name "${{ steps.tf.outputs.cluster }}"
+
+  #     - name: Nodes are Ready
+  #       run: |
+  #         kubectl wait --for=condition=Ready nodes --all --timeout=300s
+  #         kubectl get nodes -o wide
+
+  #     - name: cert-manager is running
+  #       run: kubectl -n cert-manager rollout status deployment --timeout=300s
+
+  #     - name: ClusterIssuer is Ready
+  #       run: |
+  #         kubectl wait --for=condition=Ready clusterissuer --all --timeout=180s
+  #         kubectl get clusterissuer
+
+  #     - name: NGINX ingress controller is running
+  #       run: kubectl -n nginx-ingress rollout status deployment --timeout=300s
+
+  #     - name: Load balancer has a hostname
+  #       run: |
+  #         lb=$(kubectl -n nginx-ingress get svc nginx-ingress-controller -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+  #         echo "Load balancer: $lb"
+  #         test -n "$lb"
+
+  #     - name: Argo CD is running
+  #       run: |
+  #         kubectl -n argocd rollout status deployment --timeout=300s
+  #         kubectl -n argocd rollout status statefulset --timeout=300s
+  #         kubectl -n argocd get pods
+
+  #     - name: EFS CSI driver and StorageClass exist
+  #       run: |
+  #         kubectl -n kube-system rollout status deployment/efs-csi-controller --timeout=300s
+  #         kubectl get storageclass efs-sc
+
+  #     - name: kubeconfig is in S3
+  #       run: aws s3 ls "${{ steps.tf.outputs.kubeconfig_uri }}"
+
+  # ---------------------------------------------------------------------------
+  # DESTROY — commented out on purpose. To tear everything down, an admin
+  # uncomments this job, commits, then runs the workflow manually with
+  # "destroy" ticked (Actions → terraform → Run workflow). Apply is skipped
+  # on that run. Comment the job out again afterwards.
+  # ---------------------------------------------------------------------------
+  # destroy:
+  #   name: terraform destroy
+  #   if: github.event_name == 'workflow_dispatch' && inputs.destroy
+  #   runs-on: ubuntu-latest
+  #   environment: production
+  #   steps:
+  #     - uses: actions/checkout@v7
+  #
+  #     - uses: hashicorp/setup-terraform@v4
+  #       with:
+  #         terraform_version: ${{ env.TF_VERSION }}
+  #         terraform_wrapper: false
+  #
+  #     - uses: aws-actions/configure-aws-credentials@v6
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: ${{ env.AWS_REGION }}
+  #
+  #     - name: terraform init
+  #       run: terraform init
+  #
+  #     - name: terraform destroy
+  #       run: terraform destroy -auto-approve

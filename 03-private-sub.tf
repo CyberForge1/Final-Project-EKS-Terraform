@@ -1,24 +1,24 @@
 resource "aws_subnet" "private_subnet_01" {
   vpc_id            = aws_vpc.vpc.id
-  cidr_block        = "10.0.2.0/24"
+  cidr_block        = var.private_subnet_cidrs[0]
   availability_zone = data.aws_availability_zones.available.names[0]
 
   tags = {
-    Name                                          = "private_subnet_01_new"
-    "kubernetes.io/role/internal-elb"             = "1"
-    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+    Name                                        = "private_subnet_01_new"
+    "kubernetes.io/role/internal-elb"           = "1"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   }
 }
 
 resource "aws_subnet" "private_subnet_02" {
   vpc_id            = aws_vpc.vpc.id
-  cidr_block        = "10.0.3.0/24"
+  cidr_block        = var.private_subnet_cidrs[1]
   availability_zone = data.aws_availability_zones.available.names[1]
 
   tags = {
-    Name                                          = "private_subnet_02_new"
-    "kubernetes.io/role/internal-elb"             = "1"
-    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+    Name                                        = "private_subnet_02_new"
+    "kubernetes.io/role/internal-elb"           = "1"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   }
 }
 

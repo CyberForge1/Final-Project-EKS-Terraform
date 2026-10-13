@@ -3,16 +3,16 @@ resource "helm_release" "nginx_ingress" {
   name             = "nginx-ingress"
   repository       = "oci://ghcr.io/nginx/charts"
   chart            = "nginx-ingress"
-  version          = "2.7.2"
+  version          = var.nginx_ingress_chart_version
   namespace        = "nginx-ingress"
   create_namespace = true
 
   values = [yamlencode({
     controller = {
-      replicaCount = 1
+      replicaCount = var.nginx_ingress_replicas
 
       ingressClass = {
-        name                = "nginx"
+        name                = var.ingress_class_name
         create              = true
         setAsDefaultIngress = true
       }
@@ -42,9 +42,4 @@ data "kubernetes_service_v1" "nginx_ingress" {
     name      = "nginx-ingress-controller"
     namespace = helm_release.nginx_ingress.namespace
   }
-}
-
-output "load_balancer_hostname" {
-  description = "Point a CNAME record for your domain at this hostname"
-  value       = data.kubernetes_service_v1.nginx_ingress.status[0].load_balancer[0].ingress[0].hostname
 }

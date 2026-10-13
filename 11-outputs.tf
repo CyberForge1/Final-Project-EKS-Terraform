@@ -1,11 +1,8 @@
-# Private key saved locally so you can SSH into the instance
-resource "local_sensitive_file" "ec2_private_key" {
-  content         = tls_private_key.ssh_key.private_key_pem
-  filename        = "${path.module}/my-ec2-key.pem"
-  file_permission = "0600"
-}
+# =============================================================================
+# All outputs in one place. Show them with: terraform output
+# =============================================================================
 
-# ---- EKS outputs ----
+# ---- EKS ----
 output "eks_cluster_name" {
   value = aws_eks_cluster.eks.name
 }
@@ -23,34 +20,43 @@ output "eks_node_group_name" {
 }
 
 output "kubeconfig_command" {
-  value = "aws eks update-kubeconfig --region us-west-1 --name ${aws_eks_cluster.eks.name}"
+  value = "aws eks update-kubeconfig --region ${var.aws_region} --name ${aws_eks_cluster.eks.name}"
 }
 
-# ---- EC2 outputs ----
-# Commented out: aws_instance.ec2_vm and random_password.grafana are not defined
-# in this folder, so these outputs would fail. Uncomment if you add them back.
-#
-# output "ec2_public_ip" {
-#   value = aws_instance.ec2_vm.public_ip
-# }
-#
-# output "ssh_command" {
-#   value = "ssh -i my-ec2-key.pem ubuntu@${aws_instance.ec2_vm.public_ip}"
-# }
-#
-# output "api_url" {
-#   value = "http://${aws_instance.ec2_vm.public_ip}/health"
-# }
-#
-# output "grafana_url" {
-#   value = "http://${aws_instance.ec2_vm.public_ip}:3000"
-# }
-#
-# output "grafana_user" {
-#   value = "admin"
-# }
-#
-# output "grafana_password" {
-#   value     = random_password.grafana.result
-#   sensitive = true
-# }
+# ---- kubeconfig in S3 ----
+output "kubeconfig_s3_uri" {
+  value = "s3://${aws_s3_object.kubeconfig.bucket}/${aws_s3_object.kubeconfig.key}"
+}
+
+output "kubeconfig_download_command" {
+  value = "aws s3 cp s3://${aws_s3_object.kubeconfig.bucket}/${aws_s3_object.kubeconfig.key} ~/.kube/config"
+}
+
+# ---- Ingress ----
+output "load_balancer_hostname" {
+  description = "Point a CNAME record for your domain at this hostname"
+  value       = data.kubernetes_service_v1.nginx_ingress.status[0].load_balancer[0].ingress[0].hostname
+}
+
+# ---- Argo CD ----
+output "argocd_url" {
+  value = "https://${var.argocd_hostname}"
+}
+
+output "argocd_admin_username" {
+  value = "admin"
+}
+
+output "argocd_initial_admin_password" {
+  value     = data.kubernetes_secret_v1.argocd_initial_admin.data["password"]
+  sensitive = true
+}
+
+# ---- EFS ----
+output "efs_file_system_id" {
+  value = aws_efs_file_system.efs.id
+}
+
+output "efs_storage_class" {
+  value = kubernetes_storage_class_v1.efs.metadata[0].name
+}

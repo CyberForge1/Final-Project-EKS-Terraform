@@ -4,29 +4,29 @@
 
 # ---- EFS file system ----
 resource "aws_efs_file_system" "efs" {
-  creation_token   = "${local.cluster_name}-efs"
+  creation_token   = "${var.cluster_name}-efs"
   encrypted        = true
   performance_mode = "generalPurpose"
   throughput_mode  = "elastic"
 
   # Move files not accessed for 30 days to the cheaper Infrequent Access class
   lifecycle_policy {
-    transition_to_ia = "AFTER_30_DAYS"
+    transition_to_ia = var.efs_transition_to_ia
   }
 
   tags = {
-    Name = "${local.cluster_name}-efs"
+    Name = "${var.cluster_name}-efs"
   }
 }
 
 # ---- Security group: allow NFS (2049) from inside the VPC ----
 resource "aws_security_group" "efs" {
-  name        = "${local.cluster_name}-efs-sg"
+  name        = "${var.cluster_name}-efs-sg"
   description = "Allow NFS traffic to EFS from within the VPC"
   vpc_id      = aws_vpc.vpc.id
 
   tags = {
-    Name = "${local.cluster_name}-efs-sg"
+    Name = "${var.cluster_name}-efs-sg"
   }
 }
 
@@ -68,7 +68,7 @@ resource "aws_eks_addon" "pod_identity_agent" {
 
 # ---- IAM role for the EFS CSI controller ----
 resource "aws_iam_role" "efs_csi" {
-  name = "${local.cluster_name}-efs-csi-role"
+  name = "${var.cluster_name}-efs-csi-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -119,7 +119,7 @@ resource "kubernetes_storage_class_v1" "efs" {
   volume_binding_mode = "Immediate"
 
   parameters = {
-    provisioningMode = "efs-ap"                # one EFS access point per PVC
+    provisioningMode = "efs-ap" # one EFS access point per PVC
     fileSystemId     = aws_efs_file_system.efs.id
     directoryPerms   = "700"
     basePath         = "/dynamic_provisioning"
@@ -128,11 +128,3 @@ resource "kubernetes_storage_class_v1" "efs" {
   depends_on = [aws_eks_addon.efs_csi]
 }
 
-# ---- Outputs ----
-output "efs_file_system_id" {
-  value = aws_efs_file_system.efs.id
-}
-
-output "efs_storage_class" {
-  value = kubernetes_storage_class_v1.efs.metadata[0].name
-}

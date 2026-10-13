@@ -1,6 +1,6 @@
 # IAM role assumed by the worker node EC2 instances
 resource "aws_iam_role" "eks_node_role" {
-  name = "${local.cluster_name}-node-role"
+  name = "${var.cluster_name}-node-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -29,7 +29,7 @@ resource "aws_iam_role_policy_attachment" "eks_ecr_read_only" {
 
 resource "aws_eks_node_group" "node_group" {
   cluster_name    = aws_eks_cluster.eks.name
-  node_group_name = "${local.cluster_name}-nodes"
+  node_group_name = "${var.cluster_name}-nodes"
   node_role_arn   = aws_iam_role.eks_node_role.arn
 
   # Worker nodes run in the private subnets and reach the internet via the NAT gateway
@@ -38,14 +38,14 @@ resource "aws_eks_node_group" "node_group" {
     aws_subnet.private_subnet_02.id,
   ]
 
-  instance_types = ["t2.small"]
-  capacity_type  = "ON_DEMAND"
-  disk_size      = 20
+  instance_types = var.node_instance_types
+  capacity_type  = var.node_capacity_type
+  disk_size      = var.node_disk_size
 
   scaling_config {
-    desired_size = 2
-    min_size     = 1
-    max_size     = 3
+    desired_size = var.node_desired_size
+    min_size     = var.node_min_size
+    max_size     = var.node_max_size
   }
 
   update_config {
@@ -53,7 +53,7 @@ resource "aws_eks_node_group" "node_group" {
   }
 
   tags = {
-    Name = "${local.cluster_name}-nodes"
+    Name = "${var.cluster_name}-nodes"
   }
 
   depends_on = [
