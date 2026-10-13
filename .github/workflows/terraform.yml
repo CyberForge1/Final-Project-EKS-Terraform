@@ -5,21 +5,11 @@ name: terraform deployment
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      destroy:
-        description: "Destroy everything instead of applying (needs the destroy job uncommented)"
-        type: boolean
-        default: false
 
 permissions:
   id-token: write 
   contents: read
 
-# Never run two Terraform jobs against the same state at once
-concurrency:
-  group: terraform-eks
-  cancel-in-progress: false
 
 env:
   AWS_REGION: us-west-1
