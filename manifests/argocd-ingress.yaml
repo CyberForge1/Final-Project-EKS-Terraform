@@ -1,7 +1,3 @@
-# Exposes Argo CD at https://argocd.digitalwitch.online (must match var.argocd_hostname).
-# Apply MANUALLY only after the DNS CNAME "argocd" points at the NGINX load
-# balancer (terraform output load_balancer_hostname) and resolves:
-#   kubectl apply -f manifests/argocd-ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

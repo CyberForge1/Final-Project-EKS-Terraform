@@ -98,8 +98,8 @@ jobs:
       - name: terraform plan
         run: terraform plan -out=tfplan
 
-      - name: terraform apply
-        run: terraform apply -auto-approve tfplan
+      # - name: terraform apply
+      #   run: terraform apply -auto-approve tfplan
 
   # ---------------------------------------------------------------------------
   test:
@@ -170,6 +170,13 @@ jobs:
 
       - name: kubeconfig is in S3
         run: aws s3 ls "${{ steps.tf.outputs.kubeconfig_uri }}"
+
+# After creating a record with AWS loadbalancer to namecheap
+# for your argocd, then you can run this part. 
+      - name: Argo CD is running
+        run: |
+          kubectl apply -f manifests/argocd-ingress.yaml
+          kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
 
   # ---------------------------------------------------------------------------
   # DESTROY — commented out on purpose. To tear everything down, an admin
