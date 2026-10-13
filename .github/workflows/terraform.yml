@@ -45,43 +45,42 @@ jobs:
         run: terraform validate
 
   # # ---------------------------------------------------------------------------
-  # tfsec:
-  #   name: security scan (tfsec)
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v7
+  Terraform-Security-with-tfsec:
+    name: security scan (tfsec)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
 
-  #     - name: tfsec
-  #       uses: aquasecurity/tfsec-action@v1.0.3
-  #       with:
-  #         # Report findings without blocking the deploy. Set to false to make
-  #         # any finding fail the pipeline once the known issues are fixed.
-  #         soft_fail: true
+      - name: tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          # Report findings without blocking the deploy. Set to false to make
+          # any finding fail the pipeline once the known issues are fixed.
+          soft_fail: true
 
   # # ---------------------------------------------------------------------------
-  # apply:
-  #   name: terraform apply
-  #   needs: [init, tfsec]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v7
+  Plan-&-apply:
+    name: terraform plan and apply
+    needs: [init, Terraform-Security-with-tfsec]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
 
-  #     - uses: hashicorp/setup-terraform@v4
-  #       with:
-  #         terraform_version: ${{ env.TF_VERSION }}
-  #         terraform_wrapper: false
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
 
-  #     - uses: aws-actions/configure-aws-credentials@v6
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: ${{ env.AWS_REGION }}
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-  #     - name: terraform init
-  #       run: terraform init
+      - name: terraform init
+        run: terraform init
 
-  #     - name: terraform plan
-  #       run: terraform plan -out=tfplan
+      - name: terraform plan
+        run: terraform plan -out=tfplan
 
   #     - name: terraform apply
   #       run: terraform apply -auto-approve tfplan
