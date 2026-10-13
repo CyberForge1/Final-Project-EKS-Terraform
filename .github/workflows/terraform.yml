@@ -45,7 +45,7 @@ jobs:
         run: terraform validate
 
   # # ---------------------------------------------------------------------------
-  Terraform-Security-with-tfsec:
+  terraform-Security-with-tfsec:
     name: security scan (tfsec)
     runs-on: ubuntu-latest
     steps:
@@ -59,9 +59,9 @@ jobs:
           soft_fail: true
 
   # # ---------------------------------------------------------------------------
-  Plan-&-apply:
+  plan-apply:
     name: terraform plan and apply
-    needs: [init, Terraform-Security-with-tfsec]
+    needs: [init, terraform-Security-with-tfsec]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
