@@ -5,7 +5,7 @@ echo
 export GH_TOKEN
 
 ORG="digitalwitchdemo"
-REPO="Final-Project-architecture-EKS-terraform"
+REPO="ecommerce-final-project"
 
 # Get Organization ID
 ORG_RESPONSE=$(curl -fsSL \
