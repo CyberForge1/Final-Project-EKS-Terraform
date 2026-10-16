@@ -18,6 +18,24 @@ resource "helm_release" "argocd" {
         # NGINX terminates TLS, so argocd-server serves plain HTTP inside the cluster
         "server.insecure" = true
       }
+      cm = {
+        # Health check for Argo CD's own Applications, so an "app of apps"
+        # waits for each child app to be Healthy before the next sync wave
+        "resource.customizations.health.argoproj.io_Application" = <<-EOT
+          hs = {}
+          hs.status = "Progressing"
+          hs.message = ""
+          if obj.status ~= nil then
+            if obj.status.health ~= nil then
+              hs.status = obj.status.health.status
+              if obj.status.health.message ~= nil then
+                hs.message = obj.status.health.message
+              end
+            end
+          end
+          return hs
+        EOT
+      }
     }
 
     server = {
