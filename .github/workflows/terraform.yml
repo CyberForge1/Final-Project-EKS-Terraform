@@ -27,71 +27,71 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-#   init:
-#     name: terraform init & validate
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v7
+  init:
+    name: terraform init & validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
 
-#       - uses: hashicorp/setup-terraform@v4
-#         with:
-#           terraform_version: ${{ env.TF_VERSION }}
-#           terraform_wrapper: false
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
 
-#       - uses: aws-actions/configure-aws-credentials@v6
-#         with:
-#           role-to-assume: ${{ secrets.AWS_OIDC_ARN }}
-#           aws-region: ${{ env.AWS_REGION }}
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-#       - name: terraform init
-#         run: terraform init
+      - name: terraform init
+        run: terraform init
 
-#       - name: terraform fmt
-#         run: terraform fmt -check -recursive
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
 
-#       - name: terraform validate
-#         run: terraform validate
+      - name: terraform validate
+        run: terraform validate
+
+#   # ---------------------------------------------------------------------------
+  terraform-Security-with-tfsec:
+    name: security scan (tfsec)
+    needs: [init]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          soft_fail: true
 
 # #   # ---------------------------------------------------------------------------
-#   terraform-Security-with-tfsec:
-#     name: security scan (tfsec)
-#     needs: [init]
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v7
+  plan-apply:
+    name: terraform plan and apply
+    needs: [terraform-Security-with-tfsec]  
+    if: ${{ !inputs.destroy }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
 
-#       - name: tfsec
-#         uses: aquasecurity/tfsec-action@v1.0.3
-#         with:
-#           soft_fail: true
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
 
-# #   # ---------------------------------------------------------------------------
-#   plan-apply:
-#     name: terraform plan and apply
-#     needs: [terraform-Security-with-tfsec]  
-#     if: ${{ !inputs.destroy }}
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v7
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-#       - uses: hashicorp/setup-terraform@v4
-#         with:
-#           terraform_version: ${{ env.TF_VERSION }}
-#           terraform_wrapper: false
+      - name: terraform init
+        run: terraform init
 
-#       - uses: aws-actions/configure-aws-credentials@v6
-#         with:
-#           role-to-assume: ${{ secrets.AWS_OIDC_ARN }}
-#           aws-region: ${{ env.AWS_REGION }}
+      - name: terraform plan
+        run: terraform plan -out=tfplan
 
-#       - name: terraform init
-#         run: terraform init
-
-#       - name: terraform plan
-#         run: terraform plan -out=tfplan
-
-#       - name: terraform apply
-#         run: terraform apply -auto-approve tfplan
+      - name: terraform apply
+        run: terraform apply -auto-approve tfplan
 
 # #   # ---------------------------------------------------------------------------
 #   test:
@@ -176,24 +176,24 @@ jobs:
   # "destroy" ticked (Actions → terraform deployment → Run workflow).
   # plan-apply and test are skipped on that run. Comment it out again afterwards.
   # ---------------------------------------------------------------------------
-  destroy:
-    name: terraform destroy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
+  # destroy:
+  #   name: terraform destroy
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v7
   
-      - uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-          terraform_wrapper: false
+  #     - uses: hashicorp/setup-terraform@v4
+  #       with:
+  #         terraform_version: ${{ env.TF_VERSION }}
+  #         terraform_wrapper: false
   
-      - uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ secrets.AWS_OIDC_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+  #     - uses: aws-actions/configure-aws-credentials@v6
+  #       with:
+  #         role-to-assume: ${{ secrets.AWS_OIDC_ARN }}
+  #         aws-region: ${{ env.AWS_REGION }}
   
-      - name: terraform init
-        run: terraform init
+  #     - name: terraform init
+  #       run: terraform init
   
-      - name: terraform destroy
-        run: terraform destroy -auto-approve
+  #     - name: terraform destroy
+  #       run: terraform destroy -auto-approve
