@@ -114,7 +114,7 @@ jobs:
 # # #   # ---------------------------------------------------------------------------
   test:
     name: verify deployment
-    needs: [plan-apply]
+    # needs: [plan-apply]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
