@@ -12,10 +12,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - argocd.digitalwitch.online
+        - arg.priniel.space
       secretName: argocd-server-tls
   rules:
-    - host: argocd.digitalwitch.online
+    - host: arg.priniel.space
       http:
         paths:
           - path: /
