@@ -15,7 +15,7 @@ variable "cluster_name" {
 variable "vpc_name" {
   description = "Name tag of the VPC"
   type        = string
-  default     = "prinielloud-vpc"
+  default     = "prinielcloud-vpc"
 }
 
 variable "vpc_cidr" {

@@ -17,7 +17,7 @@ terraform {
   # Remote state in S3 (encrypted, with S3-native state locking).
   # Backend blocks cannot use variables, so these values are set here directly.
   backend "s3" {
-    bucket       = "cyberforge1-k3s-tfstate-123"
+    bucket       = "cyberforge1-k3s-tfstate-12345"
     key          = "eks/terraform.tfstate"
     region       = "us-east-1"
     encrypt      = true
