@@ -81,7 +81,7 @@ variable "node_instance_types" {
 variable "node_capacity_type" {
   description = "ON_DEMAND or SPOT"
   type        = string
-  default     = "SPOT"
+  default     = "ON_DEMAND"
 }
 
 variable "node_disk_size" {
