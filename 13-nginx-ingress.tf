@@ -1,4 +1,4 @@
-# F5 NGINX Ingress Controller, exposed through an AWS Network Load Balancer
+# F5 NGINX Ingress Controller, exposed through an AWS Classic Load Balancer
 resource "helm_release" "nginx_ingress" {
   name             = "nginx-ingress"
   repository       = "oci://ghcr.io/nginx/charts"
@@ -12,8 +12,8 @@ resource "helm_release" "nginx_ingress" {
       replicaCount = var.nginx_ingress_replicas
 
       ingressClass = {
-        name                = var.ingress_class_name
-        create              = true
+        name               = var.ingress_class_name
+        create             = true
         setAsDefaultIngress = true
       }
 
@@ -23,9 +23,6 @@ resource "helm_release" "nginx_ingress" {
       service = {
         type                  = "LoadBalancer"
         externalTrafficPolicy = "Local"
-        annotations = {
-          "service.beta.kubernetes.io/aws-load-balancer-type" = "nlb"
-        }
       }
     }
   })]
