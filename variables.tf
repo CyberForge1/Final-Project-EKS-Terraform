@@ -190,3 +190,6 @@ variable "kubeconfig_s3_key" {
   type        = string
   default     = "eks/kubeconfig"
 }
+
+
+#terraform
