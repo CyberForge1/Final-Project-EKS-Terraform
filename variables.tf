@@ -75,7 +75,7 @@ variable "cluster_admin_arns" {
 variable "node_instance_types" {
   description = "EC2 instance types for the managed node group"
   type        = list(string)
-  default     = ["t2.medium"]
+  default     = ["t3.medium"]
 }
 
 variable "node_capacity_type" {
