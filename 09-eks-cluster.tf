@@ -36,7 +36,7 @@ resource "aws_eks_cluster" "eks" {
 
   access_config {
     authentication_mode                         = "API_AND_CONFIG_MAP"
-    bootstrap_cluster_creator_admin_permissions = true
+    bootstrap_cluster_creator_admin_permissions = true   # keep as is
   }
 
   tags = {
@@ -46,9 +46,7 @@ resource "aws_eks_cluster" "eks" {
   depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]
 }
 
-# ---- Extra cluster admins (e.g. the local "terraform" IAM user) ----
-# The identity that creates the cluster is admin automatically; these entries
-# give the same access to the users/roles listed in var.cluster_admin_arns.
+# Extra admins ONLY (NOT the identity that creates the cluster; it is admin automatically)
 resource "aws_eks_access_entry" "admins" {
   for_each = toset(var.cluster_admin_arns)
 
@@ -68,21 +66,4 @@ resource "aws_eks_access_policy_association" "admins" {
   }
 
   depends_on = [aws_eks_access_entry.admins]
-}
-resource "aws_eks_access_entry" "github_actions" {
-  cluster_name  = aws_eks_cluster.eks.name
-  principal_arn = "arn:aws:iam::061166140701:role/Github-action-deployment"
-  type          = "STANDARD"
-}
-
-resource "aws_eks_access_policy_association" "github_actions" {
-  cluster_name  = aws_eks_cluster.eks.name
-  principal_arn = aws_eks_access_entry.github_actions.principal_arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-
-  access_scope {
-    type = "cluster"
-  }
-
-  depends_on = [aws_eks_access_entry.github_actions]
 }
