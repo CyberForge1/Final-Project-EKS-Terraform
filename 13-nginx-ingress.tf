@@ -12,8 +12,8 @@ resource "helm_release" "nginx_ingress" {
       replicaCount = var.nginx_ingress_replicas
 
       ingressClass = {
-        name               = var.ingress_class_name
-        create             = true
+        name                = var.ingress_class_name
+        create              = true
         setAsDefaultIngress = true
       }
 
